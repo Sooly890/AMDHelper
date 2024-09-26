@@ -26,7 +26,8 @@ jobs:
       - name: Build and Install
         run: |
           bun i
-          bun run build
+          npm install @kmamal/sdl
+          npm install @kmamal/canvas
           bun run build_app
       - name: Compress executable
         run: |

@@ -27,16 +27,20 @@ jobs:
         run: |
           bun i
           bun run build
+          bun run build_app
       - name: Compress executable
         run: |
           chmod +x ./gz99
           cp build/amdhelper .
           tar c ./amdhelper | ./gz99 amdhelper.gz
+          tar c ./build_app | ./gz99 amdhelper_app.gz
       - name: Publish release
         if: ${{ github.event_name == 'workflow_dispatch' }}
         uses: ncipollo/release-action@v1
         with:
-          artifacts: ./amdhelper.gz
+          artifacts: |
+            ./amdhelper.gz
+            ./amdhelper_app.gz
           tag: ${{ inputs.tag }}
           name: AMDHelper ${{ inputs.tag }}
           allowUpdates: true

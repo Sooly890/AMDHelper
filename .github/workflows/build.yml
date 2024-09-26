@@ -25,9 +25,9 @@ jobs:
         uses: oven-sh/setup-bun@v2
       - name: Build and Install
         run: |
-          bun i
           npm install @kmamal/sdl
           npm install canvas
+          bun i
           bun run build_app
       - name: Compress executable
         run: |

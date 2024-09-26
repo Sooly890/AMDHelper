@@ -167,5 +167,7 @@ dist
 .DS_Store
 
 build
+build_app
+tempdata
 amdhelper.gz
 amdhelper.gz.new

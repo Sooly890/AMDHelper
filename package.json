@@ -3,11 +3,17 @@
   "module": "index.ts",
   "type": "commonjs",
   "scripts": {
-    "clean": "rimraf build",
+    "clean": "rimraf build && (rm -R build_app || printf \"build_app_doesn't_exist\n\" ) && (rm -R tempdata || printf \"tempdata_doesn't_exist\n\" )",
     "dev": "bun run index.ts",
     "bundle": "bun run clean && webpack",
     "compile": "nexe build/bundle.js -o build/amdhelper --remote https://github.com/alvindimas05/nexe/releases/download/v0.0.1",
-    "build": "bun run clean && bun run bundle && bun run compile"
+    "build": "bun run clean && bun run bundle && bun run compile",
+
+    "copy_build": "mkdir ./build_app && cp -R ./build/ ./build_app",
+    "node_files": "mkdir ./build_app/build && mv ./build_app/*.node ./build_app/build/",
+    "dylibs": "mkdir ./tempdata && curl -L https://github.com/kmamal/node-sdl/releases/download/v0.10.7/sdl.node-v0.10.7-darwin-x64.tar.gz > ./tempdata/sdlnode.tar.gz && tar -xzvf ./tempdata/sdlnode.tar.gz -C ./tempdata && curl -L https://github.com/Automattic/node-canvas/releases/download/v2.11.2/canvas-v2.11.2-node-v108-darwin-unknown-x64.tar.gz > ./tempdata/canvasnode.tar.gz && tar -xzvf ./tempdata/canvasnode.tar.gz -C ./tempdata && cp -r ./tempdata/Release/* ./tempdata",
+    "move_dylibs": "cp -r ./tempdata/*.dylib ./build_app/build",
+    "build_app": "bun run build && bun run copy_build && bun run node_files && bun run dylibs && bun run move_dylibs"
   },
   "devDependencies": {
     "@babel/plugin-proposal-class-properties": "^7.18.6",
@@ -21,6 +27,7 @@
     "babel-loader": "^9.1.3",
     "babel-preset-env": "^1.7.0",
     "nexe": "^4.0.0-rc.6",
+    "node-loader": "^2.0.0",
     "rimraf": "^6.0.1",
     "webpack": "^5.93.0",
     "webpack-cli": "^5.1.4"
@@ -29,7 +36,9 @@
     "typescript": "^5.5.3"
   },
   "dependencies": {
+    "@kmamal/sdl": "^0.10.7",
     "amdfriend": "git+https://github.com/NyaomiDEV/AMDFriend.git",
+    "canvas": "^2.11.2",
     "chalk": "^5.3.0",
     "console-clear": "^1.1.1",
     "dotenv": "^16.4.5",

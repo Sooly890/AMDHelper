@@ -27,7 +27,7 @@ jobs:
         run: |
           bun i
           npm install @kmamal/sdl
-          npm install @kmamal/canvas
+          npm install canvas
           bun run build_app
       - name: Compress executable
         run: |

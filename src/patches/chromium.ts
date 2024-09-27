@@ -10,60 +10,32 @@ import {
     amdhelperChromiumPlistName
 } from "@src/scripts/chromium";
 import {escapePathSpaces, exec} from "@src/utils";
-import child_process from "child_process";
 
-interface ChromiumConfig {
-    browser?: {
-        enabled_labs_experiments: string[]
-    }
-}
-
-const chromiumBrowsers = ["Chromium", "Google Chrome", "Arc", "Microsoft Edge", "Brave"];
+const chromiumBrowsers = ["Chromium", "Google Chrome", "Arc", "Microsoft Edge", "Brave Browser"];
 export const bashPath = path.join("/", "Library", "amdhelper", amdhelperChromiumBashName);
 export const plistPath = path.join("/", "Library", "LaunchAgents", amdhelperChromiumPlistName);
 
 export default class Chromium extends AppPatch {
-    configPath: string | null = null;
-    // patchValue = "use-angle@1";
-    oldPatchValues = ["enable-gpu-rasterization@1", "enable-gpu-rasterization@2"];
-    config: ChromiumConfig;
     constructor(appPath: string) {
         super(appPath);
-
-        this.setConfigPath();
-    }
-    setConfigPath(){
-        const basePath = path.join(os.homedir(), "Library/Application Support")
-        if(this.appName == "Google Chrome"){
-            this.configPath = path.join(basePath, "Google/Chrome/Local State");
-            this.setConfig();
-            return;
-        }
-
-        this.configPath = path.join(basePath, this.appName, "Local State");
-        if(fs.existsSync(this.configPath!)) {
-            this.setConfig();
-            return;
-        }
-
-        this.configPath = path.join(basePath, this.appName, "User Data/Local State");
-        if(fs.existsSync(this.configPath!)) {
-            this.setConfig();
-            return;
-        }
-        this.configPath = null;
-
-    }
-    setConfig(){
-        this.config = JSON.parse(fs.readFileSync(this.configPath).toString("utf8"));
     }
     supported() {
-        return (chromiumBrowsers.includes(this.appName) && this.configPath != null) ||
-        this.supportElectron();
+        return chromiumBrowsers.includes(this.appName) || this.isChromiumBrowser() || this.supportElectron();
     }
     supportElectron(){
-        return fs.existsSync(path.join("/Applications", `${this.appName}.app`, "Contents", "Frameworks", "Electron Framework.framework"))
-            || fs.existsSync(path.join("/Applications", `${this.appName}.app`, "Contents", "Frameworks", "Chromium Embedded Framework.framework"));
+        return fs.existsSync(path.join(this.appPath, "Contents", "Frameworks", "Electron Framework.framework"))
+            || fs.existsSync(path.join(this.appPath, "Contents", "Frameworks", "Chromium Embedded Framework.framework"));
+    }
+    isChromiumBrowser(): boolean {
+        if (!fs.existsSync(path.join(this.appPath, "Contents", "Frameworks"))) return false;
+        
+        const frameworks = fs.readdirSync(path.join(this.appPath, "Contents", "Frameworks"))
+        for(const framework of frameworks){
+            if (!framework.startsWith(this.appName) || !framework.endsWith(".framework")) continue;
+            return fs.existsSync(path.join(this.appPath, "Contents", "Frameworks", framework, "Helpers",
+                `${this.appName} Helper (GPU).app`));
+        }
+        return false
     }
     selected(): boolean {
         return global.chromiumApps.findIndex(fapp => fapp.name === this.appName) !== -1
@@ -91,15 +63,6 @@ export default class Chromium extends AppPatch {
             this.config.browser.enabled_labs_experiments !== undefined &&
             this.config.browser.enabled_labs_experiments.some(value => this.oldPatchValues.includes(value)))
     }
-    removeOldPatch(){
-        if (!this.isOldPatch()) return;
-        if(this.config.browser === undefined) return;
-        if(this.config.browser.enabled_labs_experiments === undefined) return;
-        this.config.browser!.enabled_labs_experiments =
-            this.config.browser!.enabled_labs_experiments.filter(val => !this.oldPatchValues.includes(val));
-        this.save();
-        console.log(`Removing old patch from ${this.appName}!`)
-    }
 }
 
 async function killPatchProcess(){
@@ -113,7 +76,9 @@ export async function patchChromiumApps(){
 
     fs.mkdirSync(path.join(bashPath, ".."), { recursive: true });
     fs.writeFileSync(bashPath, amdhelperChromiumBash(apps, global.disableGpuMode));
-    await exec(`sudo chmod +x ${escapePathSpaces(bashPath)}`);
+    await exec(`chmod +x ${escapePathSpaces(bashPath)}`);
+    await exec(`chmod 755 ${escapePathSpaces(bashPath)}`);
+    await exec(`chown 0:0 ${escapePathSpaces(bashPath)}`);
 
     fs.writeFileSync(plistPath, amdhelperChromiumPlist);    
 }

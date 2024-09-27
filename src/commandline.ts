@@ -52,11 +52,13 @@ export default class CommandLine {
             case "g":
                 global.disableGpuMode = !global.disableGpuMode;
                 break;
+            //@ts-expect-error
             case "a":
                 if(!global.commandlineChromiumMode){
                     await this.patchAllApps();
                     break;
                 }
+            //@ts-expect-error
             case "p":
                 if(global.chromiumApps.length > 0){
                     console.log("Applying chromium apps patch...");
@@ -72,6 +74,7 @@ export default class CommandLine {
                     child_process.spawn("bash", [bashPath], { stdio: "ignore", detached: true }).unref();
                     break;
                 }
+            //@ts-expect-error
             case "r":
                 if(global.commandlineChromiumMode){
                     removePatchChromiumApps();
